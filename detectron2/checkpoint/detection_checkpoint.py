@@ -76,13 +76,29 @@ class DetectionCheckpointer(Checkpointer):
             with PathManager.open(filename, "rb") as f:
                 data = torch.load(f)
             assert (
-                "model_state" in data
+                    "model_state" in data
             ), f"Cannot load .pyth file {filename}; pycls checkpoints must contain 'model_state'."
             model_state = {
                 k: v
                 for k, v in data["model_state"].items()
                 if not k.endswith("num_batches_tracked")
             }
+            return {"model": model_state, "__author__": "pycls", "matching_heuristics": True}
+        elif filename.endswith(".pth"):
+            # assume file is from pycls; no one else seems to use the ".pyth" extension
+            with PathManager.open(filename, "rb") as f:
+                data = torch.load(f)
+            if 'state_dict' in data:
+                model_state = data['state_dict']
+            elif 'model' in data:
+                model_state = data['model']
+            elif 'module' in data:
+                model_state = data['module']
+            else:
+                model_state = data
+            if list(model_state.keys())[0].startswith('module.'):
+                model_state = {k[7:]: v for k, v in model_state.items()}
+
             return {"model": model_state, "__author__": "pycls", "matching_heuristics": True}
 
         loaded = super()._load_file(filename)  # load native pth checkpoint
