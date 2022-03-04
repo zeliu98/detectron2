@@ -109,6 +109,26 @@ class DetectionCheckpointer(Checkpointer):
     def _load_model(self, checkpoint):
         if checkpoint.get("matching_heuristics", False):
             self._convert_ndarray_to_tensor(checkpoint["model"])
+            state_dict = checkpoint["model"]
+            # interpolate position bias table if needed
+            relative_position_bias_table_keys = [k for k in state_dict.keys() if "relative_position_bias_table" in k]
+            for k in relative_position_bias_table_keys:
+                table_pretrained = state_dict[k]
+                table_current = self.model.state_dict()[k]
+                L1, nH1 = table_pretrained.size()
+                L2, nH2 = table_current.size()
+                if nH1 != nH2:
+                    print(f"Error in loading {k}, pass")
+                else:
+                    if L1 != L2:
+                        print(f"Interpolate relative_position_bias_table using bicubic")
+                        S1 = int(L1 ** 0.5)
+                        S2 = int(L2 ** 0.5)
+                        table_pretrained_resized = torch.nn.functional.interpolate(
+                            table_pretrained.permute(1, 0).view(1, nH1, S1, S1),
+                            size=(S2, S2), mode='bicubic')
+                        state_dict[k] = table_pretrained_resized.view(nH2, L2).permute(1, 0)
+            checkpoint["model"] = state_dict
             # convert weights by name-matching heuristics
             checkpoint["model"] = align_and_update_state_dicts(
                 self.model.state_dict(),
