@@ -98,6 +98,8 @@ class DetectionCheckpointer(Checkpointer):
                 model_state = data
             if list(model_state.keys())[0].startswith('module.'):
                 model_state = {k[7:]: v for k, v in model_state.items()}
+            if not list(model_state.keys())[0].startswith('backbone.'):
+                model_state = {"backbone." + k: v for k, v in model_state.items()}
 
             return {"model": model_state, "__author__": "pycls", "matching_heuristics": True}
 
