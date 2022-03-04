@@ -112,8 +112,8 @@ class DetectionCheckpointer(Checkpointer):
             state_dict = checkpoint["model"]
             # interpolate position bias table if needed
             relative_position_bias_table_keys = [k for k in state_dict.keys() if "relative_position_bias_table" in k]
-            print(state_dict.keys)
-            print(self.model.state_dict().keys)
+            print(state_dict.keys())
+            print(self.model.state_dict().keys())
             for k in relative_position_bias_table_keys:
                 table_pretrained = state_dict[k]
                 table_current = self.model.state_dict()[k]
