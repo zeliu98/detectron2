@@ -376,8 +376,11 @@ class DefaultTrainer(TrainerBase):
         model = self.build_model(cfg)
         optimizer = self.build_optimizer(cfg, model)
         data_loader = self.build_train_loader(cfg)
-
-        model = create_ddp_model(model, broadcast_buffers=False, find_unused_parameters=True)
+        if int(os.environ.get("FIND_UNUSED_PARAMETERS", 0)) > 0:
+            find_unused_parameters = True
+        else:
+            find_unused_parameters = False
+        model = create_ddp_model(model, broadcast_buffers=False, find_unused_parameters=find_unused_parameters)
         self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
             model, data_loader, optimizer
         )
