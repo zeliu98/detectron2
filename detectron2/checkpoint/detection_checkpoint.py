@@ -85,9 +85,7 @@ class DetectionCheckpointer(Checkpointer):
             }
             return {"model": model_state, "__author__": "pycls", "matching_heuristics": True}
         elif filename.endswith(".pth"):
-            # assume file is from pycls; no one else seems to use the ".pyth" extension
-            with PathManager.open(filename, "rb") as f:
-                data = torch.load(f)
+            data = torch.load(filename, map_location=torch.device("cpu"))
             if 'state_dict' in data:
                 model_state = data['state_dict']
             elif 'model' in data:
